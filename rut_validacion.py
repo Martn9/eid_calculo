@@ -160,15 +160,109 @@ def validar_rut(rut_ingresado):
             "texto_procedimiento": texto_procedimiento
         }
 
+def generar_texto_calculo(cuerpo, procedimiento):
+    """
+    Genera el texto paso a paso exclusivamente para cuando se está 
+    calculando un DV faltante, sin comparar con uno ingresado.
+    """
+    lineas = []
+    lineas.append("=" * 55)
+    lineas.append("       CÁLCULO DE DÍGITO VERIFICADOR — MÓDULO 11")
+    lineas.append("=" * 55)
+
+    lineas.append(f"\nCuerpo ingresado : {cuerpo}  ({len(cuerpo)} dígitos)")
+
+    lineas.append("\n--- PASO 1: Multiplicar dígitos por sus factores ---")
+    lineas.append(f"  {'Posición':<12} {'Dígito':<10} {'Factor':<10} {'Producto'}")
+    lineas.append(f"  {'-'*44}")
+
+    for idx, (digito, factor, producto) in enumerate(procedimiento["digitos_con_factores"]):
+        pos_label = f"d{len(cuerpo) - idx} (pos {idx+1})"
+        lineas.append(f"  {pos_label:<12} {digito:<10} ×{factor:<9} = {producto}")
+
+    lineas.append("\n--- PASO 2: Sumar todos los productos ---")
+    suma_str = " + ".join(str(p) for _, _, p in procedimiento["digitos_con_factores"])
+    lineas.append(f"  Suma = {suma_str}")
+    lineas.append(f"  Suma total = {procedimiento['suma']}")
+
+    lineas.append("\n--- PASO 3: Calcular el resto (Suma mod 11) ---")
+    lineas.append(f"  {procedimiento['suma']} mod 11 = {procedimiento['resto']}")
+
+    lineas.append("\n--- PASO 4: Calcular el DV esperado ---")
+    lineas.append(f"  DV = 11 - resto = 11 - {procedimiento['resto']} = {procedimiento['dv_numerico']}")
+
+    dv_num = procedimiento["dv_numerico"]
+    if dv_num == 11:
+        lineas.append("  Como el resultado es 11, el DV es: 0")
+    elif dv_num == 10:
+        lineas.append("  Como el resultado es 10, el DV es: K")
+    else:
+        lineas.append(f"  El DV es: {procedimiento['dv_calculado']}")
+
+    lineas.append("\n--- RESULTADO FINAL ---")
+    lineas.append(f"  ★ El RUT completo es: {cuerpo}-{procedimiento['dv_calculado']}")
+    lineas.append("=" * 55)
+    
+    return "\n".join(lineas)
+
+
+def completar_rut(cuerpo_ingresado):
+    """
+    Recibe un cuerpo de RUT (sin DV), lo limpia, calcula su DV 
+    y retorna los datos y el procedimiento.
+    """
+    # Limpiamos puntos y espacios por si acaso
+    cuerpo = str(cuerpo_ingresado).strip().replace(".", "").replace(" ", "")
+    
+    if not cuerpo.isdigit() or len(cuerpo) < 7 or len(cuerpo) > 8:
+        return {
+            "exito": False,
+            "error": "El cuerpo del RUT debe tener entre 7 y 8 números."
+        }
+        
+    dv_calculado, procedimiento = calcular_dv(cuerpo)
+    texto_calculo = generar_texto_calculo(cuerpo, procedimiento)
+    
+    return {
+        "exito": True,
+        "rut_completo": f"{cuerpo}-{dv_calculado}",
+        "dv": dv_calculado,
+        "texto_procedimiento": texto_calculo
+    }
+
 # ── Ejecución directa ─────────────────────────────────────
 if __name__ == "__main__":
-    rut = input("Ingresa el RUT (ej: 12.345.678-9): ")
-    datos = validar_rut(rut)
-    
-    if "error" in datos and not datos.get("texto_procedimiento"):
-        print(f"\n[ERROR] {datos['error']}")
-    else:
-        print("\n" + datos["texto_procedimiento"])
+    while True:
+        print("\n=== MENÚ DE PRUEBAS DE RUT ===")
+        print("1. Validar un RUT completo (ej: 12.345.678-9)")
+        print("2. Calcular DV faltante (ej: 12345678)")
+        print("3. Salir")
         
-        if datos["es_valido"]:
-            print(f"\nLista de dígitos a procesar por el motor de cónicas: {datos['digitos']}")
+        opcion = input("Elige una opción (1-3): ")
+        
+        if opcion == "1":
+            rut = input("\nIngresa el RUT completo: ")
+            datos = validar_rut(rut)
+            
+            if "error" in datos and not datos.get("texto_procedimiento"):
+                print(f"\n[ERROR] {datos['error']}")
+            else:
+                print("\n" + datos["texto_procedimiento"])
+                if datos["es_valido"]:
+                    print(f"\nLista de dígitos extraídos: {datos['digitos']}")
+                    
+        elif opcion == "2":
+            cuerpo = input("\nIngresa el cuerpo del RUT (sin guion ni DV): ")
+            datos = completar_rut(cuerpo)
+            
+            if not datos["exito"]:
+                print(f"\n[ERROR] {datos['error']}")
+            else:
+                print("\n" + datos["texto_procedimiento"])
+                
+        elif opcion == "3":
+            print("Saliendo del programa de pruebas...")
+            break
+            
+        else:
+            print("Opción inválida. Intenta de nuevo.")
