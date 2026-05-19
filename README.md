@@ -1,5 +1,6 @@
-# eid_calculo
+## Estructura del Proyecto
 
+```text
 proyecto_calculo_eid1/
 │
 ├── main.py                  # Punto de entrada de la aplicación. Solo inicializa la GUI.
@@ -12,7 +13,7 @@ proyecto_calculo_eid1/
 │
 ├── gui/                     # Todo lo relacionado con la interfaz visual.
 │   ├── __init__.py
-│   ├── app_window.py        # Ventana principal, botones, y campos de texto.
+│   ├── app_window.py        # Ventana principal, botones y campos de texto.
 │   └── plotter.py           # Lógica para dibujar las cónicas y funciones en el plano cartesiano.
 │
 └── tests/                   # (Opcional pero recomendado)
