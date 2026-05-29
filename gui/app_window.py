@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core import rut_validacion
 from core.limites import Limites
+from core.conicas import Conica  # Importamos la nueva clase
 from gui import plotter
 
 class AppWindow(ctk.CTk):
@@ -24,6 +25,7 @@ class AppWindow(ctk.CTk):
 
         # Iniciar la configuración de cada pestaña
         self.setup_rut_tab()
+        self.setup_conicas_tab()  # Inicializamos la pestaña de cónicas
         self.setup_limites_tab()
 
     def setup_rut_tab(self):
@@ -39,33 +41,55 @@ class AppWindow(ctk.CTk):
         self.textbox_resultado = ctk.CTkTextbox(self.tab_rut, width=700, height=400, font=("Consolas", 14))
         self.textbox_resultado.pack(pady=10)
 
+    def setup_conicas_tab(self):
+        """Maquetación de la pestaña de Cónicas con campos vacíos para la defensa oral"""
+        self.frame_izq_conicas = ctk.CTkFrame(self.tab_conicas)
+        self.frame_izq_conicas.pack(side="left", fill="y", padx=10, pady=10)
+        
+        self.frame_der_conicas = ctk.CTkFrame(self.tab_conicas, width=500)
+        self.frame_der_conicas.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+
+        ctk.CTkLabel(self.frame_izq_conicas, text="Análisis de Sección Cónica", font=("Arial", 16, "bold")).pack(pady=10)
+
+        ctk.CTkLabel(self.frame_izq_conicas, text="Desarrollo Paso a Paso:").pack()
+        self.textbox_pasos_conica = ctk.CTkTextbox(self.frame_izq_conicas, width=350, height=200, font=("Consolas", 12))
+        self.textbox_pasos_conica.pack(pady=5)
+
+        # Campos VACÍOS obligatorios para la defensa oral según la rúbrica
+        ctk.CTkLabel(self.frame_izq_conicas, text="--- PARA COMPLETAR EN DEFENSA ---", text_color="yellow").pack(pady=10)
+        
+        self.entry_centro = ctk.CTkEntry(self.frame_izq_conicas, width=250, placeholder_text="Centro (h, k)")
+        self.entry_centro.pack(pady=5)
+        self.entry_vertices = ctk.CTkEntry(self.frame_izq_conicas, width=250, placeholder_text="Vértices")
+        self.entry_vertices.pack(pady=5)
+        self.entry_focos = ctk.CTkEntry(self.frame_izq_conicas, width=250, placeholder_text="Focos")
+        self.entry_focos.pack(pady=5)
+        self.entry_ejes = ctk.CTkEntry(self.frame_izq_conicas, width=250, placeholder_text="Eje Mayor/Menor o Transv./Conj.")
+        self.entry_ejes.pack(pady=5)
+        self.entry_directriz = ctk.CTkEntry(self.frame_izq_conicas, width=250, placeholder_text="Directriz (si corresponde)")
+        self.entry_directriz.pack(pady=5)
+
     def setup_limites_tab(self):
         """Maquetación de la pestaña de Límites con campos para la defensa oral"""
-        # Contenedor principal dividido en Izquierda (Datos/Inputs) y Derecha (Gráfico)
         self.frame_izq = ctk.CTkFrame(self.tab_limites)
         self.frame_izq.pack(side="left", fill="y", padx=10, pady=10)
         
         self.frame_der = ctk.CTkFrame(self.tab_limites, width=500)
         self.frame_der.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
-        # --- PANEL IZQUIERDO: Tablas e Inputs ---
         lbl_titulo = ctk.CTkLabel(self.frame_izq, text="Análisis de Discontinuidad", font=("Arial", 16, "bold"))
         lbl_titulo.pack(pady=10)
 
-        # Caja de texto para mostrar la evidencia computacional (Tabla de valores)
         ctk.CTkLabel(self.frame_izq, text="Evidencia Computacional (Tabla):").pack()
         self.textbox_tabla = ctk.CTkTextbox(self.frame_izq, width=300, height=150, font=("Consolas", 12))
         self.textbox_tabla.pack(pady=5)
 
-        # Campos VACÍOS obligatorios para la defensa oral (Rúbrica)
         ctk.CTkLabel(self.frame_izq, text="--- PARA COMPLETAR EN DEFENSA ---", text_color="yellow").pack(pady=10)
         
         self.entry_lim_izq = ctk.CTkEntry(self.frame_izq, width=200, placeholder_text="Límite por Izquierda")
         self.entry_lim_izq.pack(pady=5)
-        
         self.entry_lim_der = ctk.CTkEntry(self.frame_izq, width=200, placeholder_text="Límite por Derecha")
         self.entry_lim_der.pack(pady=5)
-        
         self.entry_tipo_disc = ctk.CTkEntry(self.frame_izq, width=200, placeholder_text="Tipo de Discontinuidad")
         self.entry_tipo_disc.pack(pady=5)
 
@@ -84,20 +108,35 @@ class AppWindow(ctk.CTk):
         self.textbox_resultado.insert("0.0", datos["texto_procedimiento"])
 
         if datos["es_valido"]:
-            # 2. Si el RUT es válido, procesamos los límites automáticamente
             digitos = datos["digitos"]
             
-            # Instanciar la lógica de límites que hizo Martin H.
+            # --- PROCESAR LÍMITES ---
             analisis = Limites(digitos)
             tabla_val = analisis.tabla_valores()
-            coordenadas = analisis.sacar_coordenadas()
-            
-            # 3. Actualizar la pestaña de límites
-            self.actualizar_pestaña_limites(tabla_val, coordenadas)
+            coordenadas_lim = analisis.sacar_coordenadas()
+            self.actualizar_pestaña_limites(tabla_val, coordenadas_lim)
+
+            # --- PROCESAR CÓNICAS ---
+            # Extraemos el DV del input asumiendo formato con guion
+            try:
+                dv = rut_input.split('-')[-1].strip()
+                conica = Conica(digitos, dv)
+                self.actualizar_pestaña_conicas(conica)
+            except IndexError:
+                # Fallback por si el RUT no tiene guion (dependerá de cómo lo maneje rut_validacion)
+                pass
+
+    def actualizar_pestaña_conicas(self, conica):
+        """Inyecta el desarrollo algebraico en la pestaña de Cónicas"""
+        self.textbox_pasos_conica.delete("0.0", "end")
+        self.textbox_pasos_conica.insert("0.0", conica.paso_a_paso_canonico())
+        
+        # Opcional: Aquí podrán enviar las coordenadas de la cónica al plotter en el futuro
+        # coordenadas = conica.sacar_coordenadas()
+        # plotter.dibujar_grafico(self.frame_der_conicas, x_vals, y_vals, titulo=f"Gráfica: {conica.tipo}")
 
     def actualizar_pestaña_limites(self, tabla_val, coordenadas):
         """Inyecta los datos matemáticos en la GUI y manda a dibujar"""
-        # Formatear la tabla de valores para la vista
         texto_tabla = "x \t\t f(x)\n"
         texto_tabla += "-"*30 + "\n"
         texto_tabla += "Por la Izquierda:\n"
@@ -111,9 +150,8 @@ class AppWindow(ctk.CTk):
         self.textbox_tabla.delete("0.0", "end")
         self.textbox_tabla.insert("0.0", texto_tabla)
 
-        # Separar coordenadas (x, y) para enviarlas a matplotlib
-        x_vals = [p[0] for p in coordenadas]
-        y_vals = [p[1] for p in coordenadas]
+        # Filtramos las coordenadas None para evitar errores en matplotlib temporalmente
+        x_vals = [p[0] for p in coordenadas if p[1] is not None]
+        y_vals = [p[1] for p in coordenadas if p[1] is not None]
         
-        # Llamar a plotter.py para que dibuje en el frame derecho
         plotter.dibujar_grafico(self.frame_der, x_vals, y_vals, titulo="Gráfica de la Función por Tramos")
