@@ -68,6 +68,16 @@ class AppWindow(ctk.CTk):
         self.entry_ejes.pack(pady=5)
         self.entry_directriz = ctk.CTkEntry(self.frame_izq_conicas, width=250, placeholder_text="Directriz (si corresponde)")
         self.entry_directriz.pack(pady=5)
+        
+        # (Dentro de setup_conicas_tab)
+        ctk.CTkLabel(self.frame_izq_conicas, text="Desarrollo a Canónica:").pack()
+        self.textbox_pasos_conica = ctk.CTkTextbox(self.frame_izq_conicas, width=350, height=120, font=("Consolas", 12))
+        self.textbox_pasos_conica.pack(pady=2)
+
+        # NUEVO: Cuadro para el procedimiento inverso
+        ctk.CTkLabel(self.frame_izq_conicas, text="Procedimiento Inverso (a General):").pack()
+        self.textbox_pasos_inverso = ctk.CTkTextbox(self.frame_izq_conicas, width=350, height=120, font=("Consolas", 12))
+        self.textbox_pasos_inverso.pack(pady=2)
 
     def setup_limites_tab(self):
         """Maquetación de la pestaña de Límites con campos para la defensa oral"""
@@ -78,20 +88,34 @@ class AppWindow(ctk.CTk):
         self.frame_der.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
         lbl_titulo = ctk.CTkLabel(self.frame_izq, text="Análisis de Discontinuidad", font=("Arial", 16, "bold"))
-        lbl_titulo.pack(pady=10)
+        lbl_titulo.pack(pady=5)
+
+        # NUEVO: Etiqueta para inyectar la regla de selección
+        self.lbl_regla_seleccion = ctk.CTkLabel(self.frame_izq, text="Regla de selección: (Esperando validación...)", text_color="cyan")
+        self.lbl_regla_seleccion.pack(pady=(0, 10))
 
         ctk.CTkLabel(self.frame_izq, text="Evidencia Computacional (Tabla):").pack()
-        self.textbox_tabla = ctk.CTkTextbox(self.frame_izq, width=300, height=150, font=("Consolas", 12))
+        self.textbox_tabla = ctk.CTkTextbox(self.frame_izq, width=300, height=120, font=("Consolas", 12))
         self.textbox_tabla.pack(pady=5)
 
-        ctk.CTkLabel(self.frame_izq, text="--- PARA COMPLETAR EN DEFENSA ---", text_color="yellow").pack(pady=10)
+        ctk.CTkLabel(self.frame_izq, text="--- PARA COMPLETAR EN DEFENSA ---", text_color="yellow").pack(pady=5)
         
-        self.entry_lim_izq = ctk.CTkEntry(self.frame_izq, width=200, placeholder_text="Límite por Izquierda")
-        self.entry_lim_izq.pack(pady=5)
-        self.entry_lim_der = ctk.CTkEntry(self.frame_izq, width=200, placeholder_text="Límite por Derecha")
-        self.entry_lim_der.pack(pady=5)
-        self.entry_tipo_disc = ctk.CTkEntry(self.frame_izq, width=200, placeholder_text="Tipo de Discontinuidad")
-        self.entry_tipo_disc.pack(pady=5)
+        # Refactorización Clean Code: Creación dinámica de campos para evitar código espagueti
+        campos_defensa = [
+            "Límite por Izquierda", "Límite por Derecha", 
+            "Existencia del Límite", "Valor f(a)", 
+            "Conclusión Continuidad", "Tipo de Discontinuidad"
+        ]
+        self.entradas_limites = {}
+        for campo in campos_defensa:
+            entry = ctk.CTkEntry(self.frame_izq, width=250, placeholder_text=campo)
+            entry.pack(pady=2)
+            self.entradas_limites[campo] = entry # Guardamos referencia en dict
+            
+        # NUEVO: Campo de texto para justificación escrita requerida por la rúbrica
+        self.textbox_justificacion = ctk.CTkTextbox(self.frame_izq, width=250, height=60)
+        self.textbox_justificacion.insert("0.0", "Justificación escrita...")
+        self.textbox_justificacion.pack(pady=5)
 
     def validar_rut_gui(self):
         """Controlador Principal: Conecta validación con cálculos matemáticos"""
@@ -117,24 +141,30 @@ class AppWindow(ctk.CTk):
             self.actualizar_pestaña_limites(tabla_val, coordenadas_lim)
 
             # --- PROCESAR CÓNICAS ---
-            # Extraemos el DV del input asumiendo formato con guion
-            try:
-                dv = rut_input.split('-')[-1].strip()
-                conica = Conica(digitos, dv)
-                self.actualizar_pestaña_conicas(conica)
-            except IndexError:
-                # Fallback por si el RUT no tiene guion (dependerá de cómo lo maneje rut_validacion)
-                pass
+            # Extraemos el DV directamente desde el validador, que ya lo entrega limpio
+            dv_limpio = datos["dv"]
+            
+            conica = Conica(digitos, dv_limpio)
+            self.actualizar_pestaña_conicas(conica)
 
     def actualizar_pestaña_conicas(self, conica):
         """Inyecta el desarrollo algebraico en la pestaña de Cónicas"""
         self.textbox_pasos_conica.delete("0.0", "end")
         self.textbox_pasos_conica.insert("0.0", conica.paso_a_paso_canonico())
         
-        # Opcional: Aquí podrán enviar las coordenadas de la cónica al plotter en el futuro
-        # coordenadas = conica.sacar_coordenadas()
-        # plotter.dibujar_grafico(self.frame_der_conicas, x_vals, y_vals, titulo=f"Gráfica: {conica.tipo}")
-
+        # Preparación para cuando Integrante 1 implemente paso_a_paso_inverso()
+        """
+        self.textbox_pasos_inverso.delete("0.0", "end")
+        self.textbox_pasos_inverso.insert("0.0", conica.paso_a_paso_inverso())
+        
+        #Descomentar cuando la función sacar_coordenadas() entregue datos reales
+        coordenadas = conica.sacar_coordenadas()
+        if coordenadas:
+            x_vals = [p[0] for p in coordenadas]
+            y_vals = [p[1] for p in coordenadas]
+            plotter.dibujar_conica(self.frame_der_conicas, x_vals, y_vals, titulo=f"Gráfica: {conica.tipo}")
+        """
+        
     def actualizar_pestaña_limites(self, tabla_val, coordenadas):
         """Inyecta los datos matemáticos en la GUI y manda a dibujar"""
         texto_tabla = "x \t\t f(x)\n"
@@ -154,4 +184,6 @@ class AppWindow(ctk.CTk):
         x_vals = [p[0] for p in coordenadas if p[1] is not None]
         y_vals = [p[1] for p in coordenadas if p[1] is not None]
         
-        plotter.dibujar_grafico(self.frame_der, x_vals, y_vals, titulo="Gráfica de la Función por Tramos")
+        # --- AQUÍ ESTÁ LA CORRECCIÓN ---
+        # Cambiamos plotter.dibujar_grafico por plotter.dibujar_limites
+        plotter.dibujar_limites(self.frame_der, x_vals, y_vals, titulo="Gráfica de la Función por Tramos")
