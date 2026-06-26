@@ -11,16 +11,34 @@ def _preparar_canvas(frame_destino, fig):
     canvas.draw()
     canvas.get_tk_widget().pack(fill="both", expand=True)
 
-def dibujar_limites(frame_destino, x_vals, y_vals, x_hueco=None, y_hueco=None, titulo="Función por Tramos"):
-    """Dibuja la función e incluye el círculo vacío si hay discontinuidad removible."""
+def dibujar_limites(frame_destino, x_vals, y_vals, x_hueco=None, y_hueco=None,
+                    asintota_x=None, titulo="Función por Tramos"):
+    """
+    Dibuja la función por tramos.
+    - x_hueco/y_hueco: círculo vacío para la discontinuidad removible.
+    - asintota_x: dibuja la asíntota vertical (caso discontinuidad infinita)
+      y separa las ramas izquierda/derecha para que no se una el salto al infinito.
+    """
     fig, ax = plt.subplots(figsize=(6, 5))
-    
-    # Dibujar la línea principal
-    ax.plot(x_vals, y_vals, color="#1f538d", linewidth=2)
-    
-    # Dibujar círculo vacío (ruptura) si el Integrante 2 provee la coordenada
+
+    if asintota_x is not None:
+        # Separar en dos ramas para no dibujar la línea vertical falsa
+        xi = [x for x in x_vals if x < asintota_x]
+        yi = y_vals[:len(xi)]
+        xd = x_vals[len(xi):]
+        yd = y_vals[len(xi):]
+        ax.plot(xi, yi, color="#1f538d", linewidth=2)
+        ax.plot(xd, yd, color="#1f538d", linewidth=2)
+        ax.axvline(asintota_x, color="red", linestyle="--", linewidth=1.5, label="Asíntota vertical")
+        ax.set_ylim(-50, 50)  # recorte para apreciar la tendencia al infinito
+        ax.legend(loc="upper right", fontsize=8)
+    else:
+        ax.plot(x_vals, y_vals, color="#1f538d", linewidth=2)
+
+    # Círculo vacío (ruptura) para discontinuidad removible
     if x_hueco is not None and y_hueco is not None:
-        ax.plot(x_hueco, y_hueco, marker='o', markerfacecolor='white', markeredgecolor='red', markersize=8)
+        ax.plot(x_hueco, y_hueco, marker='o', markerfacecolor='white',
+                markeredgecolor='red', markersize=9, zorder=5)
 
     ax.set_title(titulo)
     ax.grid(True, linestyle="--", alpha=0.6)
