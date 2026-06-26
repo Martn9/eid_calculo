@@ -151,8 +151,7 @@ class AppWindow(ctk.CTk):
         self.textbox_pasos_conica.delete("0.0", "end")
         self.textbox_pasos_conica.insert("0.0", conica.paso_a_paso_canonico())
         
-        # Preparación para cuando Integrante 1 implemente paso_a_paso_inverso()
-        """
+ 
         self.textbox_pasos_inverso.delete("0.0", "end")
         self.textbox_pasos_inverso.insert("0.0", conica.paso_a_paso_inverso())
         
@@ -161,7 +160,7 @@ class AppWindow(ctk.CTk):
             x_vals = [p[0] for p in coordenadas]
             y_vals = [p[1] for p in coordenadas]
             plotter.dibujar_conica(self.frame_der_conicas, x_vals, y_vals, titulo=f"Gráfica: {conica.tipo}")
-        """
+     
         
     def actualizar_pestaña_limites(self, tabla_val, coordenadas, analisis):
         """Inyecta los datos matemáticos en la GUI y manda a dibujar"""
