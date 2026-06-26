@@ -32,14 +32,30 @@ def dibujar_limites(frame_destino, x_vals, y_vals, x_hueco=None, y_hueco=None, t
 def dibujar_conica(frame_destino, x_vals, y_vals, titulo="Sección Cónica"):
     """Dibuja la cónica SOLO utilizando los puntos recibidos (según rúbrica)."""
     fig, ax = plt.subplots(figsize=(6, 5))
-    
-    # Usamos scatter (puntos) en vez de plot (líneas conectadas)
-    ax.scatter(x_vals, y_vals, color="#8d1f2b", s=10) # s es el tamaño del punto
-    
+
+    ax.scatter(x_vals, y_vals, color="#8d1f2b", s=6)
+
+    # Autoescalado: encuadramos la cónica con un margen del 12%
+    if x_vals and y_vals:
+        min_x, max_x = min(x_vals), max(x_vals)
+        min_y, max_y = min(y_vals), max(y_vals)
+        mx = (max_x - min_x) * 0.12 or 1
+        my = (max_y - min_y) * 0.12 or 1
+        ax.set_xlim(min_x - mx, max_x + mx)
+        ax.set_ylim(min_y - my, max_y + my)
+
     ax.set_title(titulo)
     ax.grid(True, linestyle="--", alpha=0.6)
     ax.axhline(0, color='black', linewidth=1)
     ax.axvline(0, color='black', linewidth=1)
-    ax.axis('equal') # CRÍTICO: Para que las circunferencias no se vean como elipses ovaladas
+    ax.set_aspect('equal', adjustable='datalim')  # circunferencias redondas, sin distorsión
 
+    _preparar_canvas(frame_destino, fig)
+
+
+def mostrar_mensaje(frame_destino, texto):
+    """Muestra un mensaje en el área de gráfico (ej. cónica imaginaria)."""
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.text(0.5, 0.5, texto, ha="center", va="center", wrap=True, fontsize=12)
+    ax.axis("off")
     _preparar_canvas(frame_destino, fig)
