@@ -58,38 +58,124 @@ class Conica:
         else:
             self.tipo = "Hipérbola"
 
-    def paso_a_paso_canonico(self):
-        # Armamos el texto sumando strings (como se hace normalmente)
-        texto = "=== DE ECUACIÓN GENERAL A FORMA CANÓNICA ===\n\n"
-        texto += f"Ecuación inicial: {self.A:.2f}x² + {self.B:.2f}y² + {self.C:.2f}x + {self.D:.2f}y + {self.E:.2f} = 0\n\n"
-        
-        if self.tipo in ["Circunferencia", "Elipse", "Hipérbola"]:
-            texto += "Paso 1: Juntamos las 'x' a un lado, las 'y' al otro, y pasamos el número solo a la derecha.\n"
-            texto += "Paso 2: Le sacamos el factor común a los números que acompañan al x² y al y².\n"
-            texto += "Paso 3: Hacemos la 'completación de cuadrados' (sumamos la mitad del número del medio al cuadrado).\n"
-            texto += "Paso 4: Lo que agregamos a la izquierda, también lo sumamos a la derecha para equilibrar.\n"
-            texto += "Paso 5: Comprimimos la ecuación dejándola como binomios al cuadrado perfectos.\n"
-            if self.tipo != "Circunferencia":
-                texto += "Paso 6: Como es Elipse o Hipérbola, dividimos todo por el número de la derecha para igualar a 1.\n"
+    def ecuacion_general_str(self):
+        """Devuelve la ecuación general con los coeficientes reales del RUT."""
+        return (f"{self.A:.2f}x² + {self.B:.2f}y² + "
+                f"{self.C:.2f}x + {self.D:.2f}y + {self.E:.2f} = 0")
+
+    def forma_canonica(self):
+        """
+        Calcula numéricamente la forma canónica completando cuadrados
+        (sin librerías). Devuelve un diccionario con los valores reales:
+        centro/vértice, constante de la derecha y semiejes cuando aplica.
+        """
+        datos = {"tipo": self.tipo}
+
+        # --- PARÁBOLA DE EJE VERTICAL (B = 0): (x-h)² = (-D/A)(y - k) ---
+        if self.B == 0:
+            h = -self.C / (2 * self.A)
+            k = (self.A * h ** 2 - self.E) / self.D
+            p = -self.D / self.A            # (x-h)² = p (y - k)
+            datos.update({"orientacion": "vertical", "h": h, "k": k, "p": p})
+
+        # --- PARÁBOLA DE EJE HORIZONTAL (A = 0): (y-k)² = (-C/B)(x - h) ---
+        elif self.A == 0:
+            k = -self.D / (2 * self.B)
+            h = (self.B * k ** 2 - self.E) / self.C
+            p = -self.C / self.B            # (y-k)² = p (x - h)
+            datos.update({"orientacion": "horizontal", "h": h, "k": k, "p": p})
+
+        # --- CENTRALES: A(x-h)² + B(y-k)² = M ---
         else:
-            texto += "Paso 1: Dejamos la letra que está al cuadrado a la izquierda y pasamos todo lo demás a la derecha.\n"
-            texto += "Paso 2: Factorizamos el número principal.\n"
-            texto += "Paso 3: Hacemos la completación de cuadrados sumando la mitad del término lineal al cuadrado.\n"
-            texto += "Paso 4: Comprimimos la izquierda como un binomio al cuadrado perfecto.\n"
-            texto += "Paso 5: Factorizamos la derecha para que el vértice (h, k) quede a la vista.\n"
-            
-        texto += f"\n>> El análisis matemático indica que la figura es una {self.tipo}."
+            h = -self.C / (2 * self.A)
+            k = -self.D / (2 * self.B)
+            M = self.A * h ** 2 + self.B * k ** 2 - self.E
+            datos.update({"h": h, "k": k, "M": M})
+
+            if self.tipo == "Circunferencia":
+                datos["r2"] = M / self.A    # (x-h)² + (y-k)² = r²
+            else:
+                # Dividimos por M:  (x-h)²/(M/A) + (y-k)²/(M/B) = 1
+                datos["den_x"] = M / self.A
+                datos["den_y"] = M / self.B
+        return datos
+
+    def paso_a_paso_canonico(self):
+        c = self.forma_canonica()
+        texto = "=== DE ECUACIÓN GENERAL A FORMA CANÓNICA ===\n\n"
+        texto += f"Ecuación general: {self.ecuacion_general_str()}\n\n"
+
+        # ---------- CÍRCULO / ELIPSE / HIPÉRBOLA ----------
+        if self.tipo in ["Circunferencia", "Elipse", "Hipérbola"]:
+            h, k, M = c["h"], c["k"], c["M"]
+            texto += f"Paso 1: Agrupamos términos en x y en y, y pasamos E al otro lado:\n"
+            texto += f"   {self.A:.2f}x² + {self.C:.2f}x + {self.B:.2f}y² + {self.D:.2f}y = {-self.E:.2f}\n\n"
+            texto += f"Paso 2: Factor común {self.A:.2f} en x y {self.B:.2f} en y:\n"
+            texto += f"   {self.A:.2f}(x² + {self.C/self.A:.2f}x) + {self.B:.2f}(y² + {self.D/self.B:.2f}y) = {-self.E:.2f}\n\n"
+            texto += f"Paso 3: Completamos cuadrados. Mitad al cuadrado:\n"
+            texto += f"   x: ({self.C/self.A/2:.2f})² = {(self.C/self.A/2)**2:.2f}   |   y: ({self.D/self.B/2:.2f})² = {(self.D/self.B/2)**2:.2f}\n\n"
+            texto += f"Paso 4: Sumamos lo mismo (x factor) a la derecha para equilibrar:\n"
+            texto += f"   {self.A:.2f}(x {'-' if h>=0 else '+'} {abs(h):.2f})² + {self.B:.2f}(y {'-' if k>=0 else '+'} {abs(k):.2f})² = {M:.2f}\n\n"
+
+            if self.tipo == "Circunferencia":
+                r2 = c["r2"]
+                r = r2 ** 0.5 if r2 > 0 else 0
+                texto += f"Paso 5: Dividimos por {self.A:.2f}. FORMA CANÓNICA:\n"
+                texto += f"   (x {'-' if h>=0 else '+'} {abs(h):.2f})² + (y {'-' if k>=0 else '+'} {abs(k):.2f})² = {r2:.2f}\n"
+                texto += f"   Centro = ({h:.2f}, {k:.2f})   Radio = {r:.2f}\n"
+            else:
+                dx, dy = c["den_x"], c["den_y"]
+                texto += f"Paso 5: Dividimos todo por {M:.2f} para igualar a 1. FORMA CANÓNICA:\n"
+                texto += f"   (x {'-' if h>=0 else '+'} {abs(h):.2f})²/({dx:.2f}) + (y {'-' if k>=0 else '+'} {abs(k):.2f})²/({dy:.2f}) = 1\n"
+                texto += f"   Centro = ({h:.2f}, {k:.2f})\n"
+
+        # ---------- PARÁBOLA ----------
+        else:
+            h, k, p = c["h"], c["k"], c["p"]
+            if c["orientacion"] == "vertical":
+                texto += f"Paso 1: Como B = 0, dejamos x² a la izquierda:\n"
+                texto += f"   {self.A:.2f}x² + {self.C:.2f}x = {-self.D:.2f}y {'-' if self.E>=0 else '+'} {abs(self.E):.2f}\n\n"
+                texto += f"Paso 2: Factor común {self.A:.2f} y completamos cuadrado en x:\n"
+                texto += f"   mitad = {self.C/self.A/2:.2f}  ->  ({self.C/self.A/2:.2f})² = {(self.C/self.A/2)**2:.2f}\n\n"
+                texto += f"Paso 3: FORMA CANÓNICA (parábola vertical):\n"
+                texto += f"   (x {'-' if h>=0 else '+'} {abs(h):.2f})² = {p:.2f}·(y {'-' if k>=0 else '+'} {abs(k):.2f})\n"
+            else:
+                texto += f"Paso 1: Como A = 0, dejamos y² a la izquierda:\n"
+                texto += f"   {self.B:.2f}y² + {self.D:.2f}y = {-self.C:.2f}x {'-' if self.E>=0 else '+'} {abs(self.E):.2f}\n\n"
+                texto += f"Paso 2: Factor común {self.B:.2f} y completamos cuadrado en y:\n"
+                texto += f"   mitad = {self.D/self.B/2:.2f}  ->  ({self.D/self.B/2:.2f})² = {(self.D/self.B/2)**2:.2f}\n\n"
+                texto += f"Paso 3: FORMA CANÓNICA (parábola horizontal):\n"
+                texto += f"   (y {'-' if k>=0 else '+'} {abs(k):.2f})² = {p:.2f}·(x {'-' if h>=0 else '+'} {abs(h):.2f})\n"
+            texto += f"   Vértice = ({h:.2f}, {k:.2f})\n"
+
+        texto += f"\n>> Clasificación: {self.tipo}."
         return texto
 
     def paso_a_paso_inverso(self):
-        texto = "=== PROCEDIMIENTO INVERSO ===\n\n"
-        texto += "Para retroceder y volver a la ecuación original hacemos esto:\n"
-        texto += "1. Agarramos la ecuación canónica y miramos los binomios al cuadrado (x-h)² y (y-k)².\n"
-        texto += "2. Los resolvemos usando la vieja regla: El primero al cuadrado, más el doble del primero por el segundo, más el segundo al cuadrado.\n"
-        texto += "3. Multiplicamos eso por los números que estaban afuera del paréntesis.\n"
-        texto += "4. Si nos quedó alguna fracción abajo, multiplicamos toda la ecuación por el Mínimo Común Múltiplo para matarla.\n"
-        texto += "5. Pasamos todo para el lado izquierdo para que quede igualado a 0.\n"
-        texto += "6. Sumamos los números sueltos y recuperamos la ecuación general.\n"
+        c = self.forma_canonica()
+        texto = "=== PROCEDIMIENTO INVERSO (CANÓNICA -> GENERAL) ===\n\n"
+
+        if self.tipo in ["Circunferencia", "Elipse", "Hipérbola"]:
+            h, k = c["h"], c["k"]
+            texto += f"Partimos de la canónica con centro ({h:.2f}, {k:.2f}).\n\n"
+            texto += f"Paso 1: Expandimos los binomios:\n"
+            texto += f"   (x {'-' if h>=0 else '+'} {abs(h):.2f})² = x² {'-' if h>=0 else '+'} {abs(2*h):.2f}x + {h**2:.2f}\n"
+            texto += f"   (y {'-' if k>=0 else '+'} {abs(k):.2f})² = y² {'-' if k>=0 else '+'} {abs(2*k):.2f}y + {k**2:.2f}\n\n"
+            texto += f"Paso 2: Multiplicamos por sus coeficientes A={self.A:.2f} y B={self.B:.2f}.\n"
+            texto += f"Paso 3: Pasamos todo a la izquierda e igualamos a 0.\n"
+            texto += f"Paso 4: Sumando los términos sueltos recuperamos la general:\n"
+            texto += f"   {self.ecuacion_general_str()}\n"
+        else:
+            h, k, p = c["h"], c["k"], c["p"]
+            if c["orientacion"] == "vertical":
+                texto += f"Partimos de (x {'-' if h>=0 else '+'} {abs(h):.2f})² = {p:.2f}(y {'-' if k>=0 else '+'} {abs(k):.2f}).\n\n"
+                texto += f"Paso 1: Expandimos: x² {'-' if h>=0 else '+'} {abs(2*h):.2f}x + {h**2:.2f} = {p:.2f}y {'-' if k>=0 else '+'} {abs(p*k):.2f}\n"
+            else:
+                texto += f"Partimos de (y {'-' if k>=0 else '+'} {abs(k):.2f})² = {p:.2f}(x {'-' if h>=0 else '+'} {abs(h):.2f}).\n\n"
+                texto += f"Paso 1: Expandimos: y² {'-' if k>=0 else '+'} {abs(2*k):.2f}y + {k**2:.2f} = {p:.2f}x {'-' if h>=0 else '+'} {abs(p*h):.2f}\n"
+            texto += f"Paso 2: Multiplicamos por el coeficiente principal y pasamos todo a la izquierda.\n"
+            texto += f"Paso 3: Igualando a 0 recuperamos la general:\n"
+            texto += f"   {self.ecuacion_general_str()}\n"
         return texto
 
     def sacar_coordenadas(self, n=900):
