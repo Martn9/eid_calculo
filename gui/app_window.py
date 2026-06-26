@@ -200,6 +200,18 @@ class AppWindow(ctk.CTk):
         # Filtramos las coordenadas None para evitar errores en matplotlib temporalmente
         x_vals = [p[0] for p in coordenadas if p[1] is not None]
         y_vals = [p[1] for p in coordenadas if p[1] is not None]
+
+        # CONEXIÓN: hueco (removible) y asíntota (infinita) según el caso
+        hueco = analisis.punto_hueco()
+        x_hueco = hueco[0] if hueco else None
+        y_hueco = hueco[1] if hueco else None
+        asintota = analisis.a if analisis.residuo == 2 else None
+
+        plotter.dibujar_limites(
+            self.frame_der, x_vals, y_vals,
+            x_hueco=x_hueco, y_hueco=y_hueco, asintota_x=asintota,
+            titulo="Gráfica de la Función por Tramos"
+        )
         
         plotter.dibujar_limites(self.frame_der, x_vals, y_vals, titulo="Gráfica de la Función por Tramos")
 
