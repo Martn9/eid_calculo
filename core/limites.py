@@ -87,6 +87,16 @@ class Limites:
                 tabla_der.append((round(x_der, 4), round(y_der, 4)))
                 
         return {"izq": tabla_izq, "der": tabla_der}
+    
+    def punto_hueco(self):
+        """
+        Coordenada del 'hoyo' en la gráfica para la discontinuidad removible.
+        Retorna (x, y) en x=a usando la función simplificada (x + d1),
+        o None si no corresponde (salto o infinita).
+        """
+        if self.residuo == 0:
+            return (self.a, self.a + self.d1)
+        return None
 
     def sacar_coordenadas(self):
         # Creamos los puntitos para que el plotter dibuje la curva
