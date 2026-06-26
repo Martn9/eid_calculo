@@ -92,52 +92,94 @@ class Conica:
         texto += "6. Sumamos los números sueltos y recuperamos la ecuación general.\n"
         return texto
 
-    def sacar_coordenadas(self):
+    def sacar_coordenadas(self, n=900):
+        """
+        Genera las coordenadas (x, y) de la cónica.
+
+        La ventana de barrido se calcula a partir de la forma canónica
+        (centro y semiejes reales), de modo que el gráfico quede siempre
+        centrado, bien muestreado y a escala, sin importar el RUT.
+
+        Si la cónica no tiene puntos reales (cónica imaginaria), se marca
+        self.es_real = False y se retorna lista vacía.
+        """
+        self.es_real = True
+        self.mensaje = ""
         puntos = []
-        
-        # Sacamos un centro de referencia usando una fórmula básica para no buscar puntos al infinito
-        centro_x = -self.C / (2 * self.A) if self.A != 0 else 0
-        centro_y = -self.D / (2 * self.B) if self.B != 0 else 0
-        
-        # Si es Parábola Horizontal (no tiene X al cuadrado)
+
+        # --- PARÁBOLA DE EJE HORIZONTAL (no hay término x²) ---
         if self.A == 0:
-            # Hacemos un loop simple alrededor del centro
-            for i in range(-1000, 1000):
-                y = centro_y + (i * 0.1)
-                # Despejamos X a la mala
-                x = (-self.B*(y**2) - self.D*y - self.E) / self.C
+            # By² + Cx + Dy + E = 0  ->  x = -(By² + Dy + E) / C
+            k = -self.D / (2 * self.B)          # 'y' del vértice
+            ancho = self._ancho_parabola()      # cuánto abrir alrededor del vértice
+            y0, y1 = k - ancho, k + ancho
+            paso = (y1 - y0) / n
+            for i in range(n + 1):
+                y = y0 + i * paso
+                x = -(self.B * (y ** 2) + self.D * y + self.E) / self.C
                 puntos.append((x, y))
-                
-        # Si es Parábola Vertical (no tiene Y al cuadrado)
+
+        # --- PARÁBOLA DE EJE VERTICAL (no hay término y²) ---
         elif self.B == 0:
-            for i in range(-1000, 1000):
-                x = centro_x + (i * 0.1)
-                # Despejamos Y
-                y = (-self.A*(x**2) - self.C*x - self.E) / self.D
+            # Ax² + Cx + Dy + E = 0  ->  y = -(Ax² + Cx + E) / D
+            h = -self.C / (2 * self.A)
+            ancho = self._ancho_parabola()
+            x0, x1 = h - ancho, h + ancho
+            paso = (x1 - x0) / n
+            for i in range(n + 1):
+                x = x0 + i * paso
+                y = -(self.A * (x ** 2) + self.C * x + self.E) / self.D
                 puntos.append((x, y))
-                
-        # Si es Elipse, Hipérbola o Circunferencia (Ambas al cuadrado)
+
+        # --- CENTRALES: CIRCUNFERENCIA, ELIPSE, HIPÉRBOLA ---
         else:
-            # Usamos la fórmula general cuadrática para despejar 'Y'
-            a = self.B
-            b = self.D
-            
-            for i in range(-3000, 3000):
-                x = centro_x + (i * 0.1)
-                # Todo lo que no tiene 'y' lo tratamos como la constante 'c'
-                c = self.A*(x**2) + self.C*x + self.E
-                
-                # Lo que va adentro de la raíz
-                discriminante = (b**2) - (4*a*c)
-                
-                # Si es positivo, se puede sacar raíz cuadrada
-                if discriminante >= 0:
-                    raiz = discriminante ** 0.5
-                    
-                    y1 = (-b + raiz) / (2*a)
-                    y2 = (-b - raiz) / (2*a)
-                    
-                    puntos.append((x, y1))
-                    puntos.append((x, y2))
-                    
+            h = -self.C / (2 * self.A)
+            k = -self.D / (2 * self.B)
+            # Completación de cuadrados:  A(x-h)² + B(y-k)² = M
+            M = self.A * h ** 2 + self.B * k ** 2 - self.E
+
+            mismo_signo = (self.A * self.B) > 0
+
+            if mismo_signo:
+                # Circunferencia / Elipse. Real solo si M/A > 0
+                if (M / self.A) <= 0:
+                    self.es_real = False
+                    self.mensaje = ("La cónica no posee puntos reales "
+                                    "(cónica imaginaria). Prueba con otro RUT.")
+                    return []
+                semi_x = (M / self.A) ** 0.5     # semieje en x
+                x0, x1 = h - semi_x, h + semi_x  # barrido exacto extremo a extremo
+            else:
+                # Hipérbola: mostramos ~3 semiejes a cada lado del centro
+                semi_x = (abs(M / self.A)) ** 0.5 if M != 0 else 1.0
+                if semi_x == 0:
+                    semi_x = 1.0
+                x0, x1 = h - 3 * semi_x, h + 3 * semi_x
+
+            paso = (x1 - x0) / n
+            a_coef = self.B
+            b_coef = self.D
+            for i in range(n + 1):
+                x = x0 + i * paso
+                c_coef = self.A * (x ** 2) + self.C * x + self.E
+                disc = b_coef ** 2 - 4 * a_coef * c_coef
+                if disc < 0:
+                    continue
+                raiz = disc ** 0.5
+                puntos.append((x, (-b_coef + raiz) / (2 * a_coef)))
+                puntos.append((x, (-b_coef - raiz) / (2 * a_coef)))
+
         return puntos
+
+    def _ancho_parabola(self):
+        """Semiancho razonable para abrir la parábola alrededor del vértice."""
+        if self.A == 0:
+            base = abs(self.C / self.B) if self.B != 0 else 1.0
+        else:
+            base = abs(self.D / self.A) if self.A != 0 else 1.0
+        ancho = base * 1.5
+        if ancho < 5:
+            ancho = 5.0
+        if ancho > 20:
+            ancho = 20.0
+        return ancho
