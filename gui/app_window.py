@@ -108,11 +108,13 @@ class AppWindow(ctk.CTk):
         ]
         self.entradas_limites = {}
         for campo in campos_defensa:
+            ctk.CTkLabel(self.frame_izq, text=campo, anchor="w").pack(fill="x", padx=20)
             entry = ctk.CTkEntry(self.frame_izq, width=250, placeholder_text=campo)
-            entry.pack(pady=2)
-            self.entradas_limites[campo] = entry 
-            
+            entry.pack(pady=(0, 4))
+            self.entradas_limites[campo] = entry
+
         # Campo de texto para justificación escrita requerida por la rúbrica
+        ctk.CTkLabel(self.frame_izq, text="Justificación escrita", anchor="w").pack(fill="x", padx=20)
         self.textbox_justificacion = ctk.CTkTextbox(self.frame_izq, width=250, height=60)
         self.textbox_justificacion.insert("0.0", "Justificación escrita...")
         self.textbox_justificacion.pack(pady=5)
