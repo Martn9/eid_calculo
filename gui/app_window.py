@@ -51,10 +51,6 @@ class AppWindow(ctk.CTk):
 
         ctk.CTkLabel(self.frame_izq_conicas, text="Análisis de Sección Cónica", font=("Arial", 16, "bold")).pack(pady=10)
 
-        ctk.CTkLabel(self.frame_izq_conicas, text="Desarrollo Paso a Paso:").pack()
-        self.textbox_pasos_conica = ctk.CTkTextbox(self.frame_izq_conicas, width=350, height=200, font=("Consolas", 12))
-        self.textbox_pasos_conica.pack(pady=5)
-
         # Campos VACÍOS obligatorios para la defensa oral según la rúbrica
         ctk.CTkLabel(self.frame_izq_conicas, text="--- PARA COMPLETAR EN DEFENSA ---", text_color="yellow").pack(pady=10)
         
@@ -69,12 +65,11 @@ class AppWindow(ctk.CTk):
         self.entry_directriz = ctk.CTkEntry(self.frame_izq_conicas, width=250, placeholder_text="Directriz (si corresponde)")
         self.entry_directriz.pack(pady=5)
         
-        # (Dentro de setup_conicas_tab)
         ctk.CTkLabel(self.frame_izq_conicas, text="Desarrollo a Canónica:").pack()
         self.textbox_pasos_conica = ctk.CTkTextbox(self.frame_izq_conicas, width=350, height=120, font=("Consolas", 12))
         self.textbox_pasos_conica.pack(pady=2)
 
-        # NUEVO: Cuadro para el procedimiento inverso
+        # Cuadro para el procedimiento inverso
         ctk.CTkLabel(self.frame_izq_conicas, text="Procedimiento Inverso (a General):").pack()
         self.textbox_pasos_inverso = ctk.CTkTextbox(self.frame_izq_conicas, width=350, height=120, font=("Consolas", 12))
         self.textbox_pasos_inverso.pack(pady=2)
@@ -90,7 +85,7 @@ class AppWindow(ctk.CTk):
         lbl_titulo = ctk.CTkLabel(self.frame_izq, text="Análisis de Discontinuidad", font=("Arial", 16, "bold"))
         lbl_titulo.pack(pady=5)
 
-        # NUEVO: Etiqueta para inyectar la regla de selección
+        # Etiqueta para inyectar la regla de selección automática
         self.lbl_regla_seleccion = ctk.CTkLabel(self.frame_izq, text="Regla de selección: (Esperando validación...)", text_color="cyan")
         self.lbl_regla_seleccion.pack(pady=(0, 10))
 
@@ -98,9 +93,14 @@ class AppWindow(ctk.CTk):
         self.textbox_tabla = ctk.CTkTextbox(self.frame_izq, width=300, height=120, font=("Consolas", 12))
         self.textbox_tabla.pack(pady=5)
 
+        # CONEXIÓN: Agregamos una caja oculta/visible para el paso a paso automático del desarrollo matemático
+        ctk.CTkLabel(self.frame_izq, text="Procedimiento Algebraico de Límites:").pack()
+        self.textbox_desarrollo_auto = ctk.CTkTextbox(self.frame_izq, width=300, height=100, font=("Arial", 11))
+        self.textbox_desarrollo_auto.pack(pady=5)
+
         ctk.CTkLabel(self.frame_izq, text="--- PARA COMPLETAR EN DEFENSA ---", text_color="yellow").pack(pady=5)
         
-        # Refactorización Clean Code: Creación dinámica de campos para evitar código espagueti
+        # Creación dinámica de campos para la defensa oral
         campos_defensa = [
             "Límite por Izquierda", "Límite por Derecha", 
             "Existencia del Límite", "Valor f(a)", 
@@ -110,9 +110,9 @@ class AppWindow(ctk.CTk):
         for campo in campos_defensa:
             entry = ctk.CTkEntry(self.frame_izq, width=250, placeholder_text=campo)
             entry.pack(pady=2)
-            self.entradas_limites[campo] = entry # Guardamos referencia en dict
+            self.entradas_limites[campo] = entry 
             
-        # NUEVO: Campo de texto para justificación escrita requerida por la rúbrica
+        # Campo de texto para justificación escrita requerida por la rúbrica
         self.textbox_justificacion = ctk.CTkTextbox(self.frame_izq, width=250, height=60)
         self.textbox_justificacion.insert("0.0", "Justificación escrita...")
         self.textbox_justificacion.pack(pady=5)
@@ -138,12 +138,11 @@ class AppWindow(ctk.CTk):
             analisis = Limites(digitos)
             tabla_val = analisis.tabla_valores()
             coordenadas_lim = analisis.sacar_coordenadas()
-            self.actualizar_pestaña_limites(tabla_val, coordenadas_lim)
+            # CONEXIÓN: Le enviamos el objeto 'analisis' completo a la pestaña de límites
+            self.actualizar_pestaña_limites(tabla_val, coordenadas_lim, analisis)
 
             # --- PROCESAR CÓNICAS ---
-            # Extraemos el DV directamente desde el validador, que ya lo entrega limpio
             dv_limpio = datos["dv"]
-            
             conica = Conica(digitos, dv_limpio)
             self.actualizar_pestaña_conicas(conica)
 
@@ -157,7 +156,6 @@ class AppWindow(ctk.CTk):
         self.textbox_pasos_inverso.delete("0.0", "end")
         self.textbox_pasos_inverso.insert("0.0", conica.paso_a_paso_inverso())
         
-        #Descomentar cuando la función sacar_coordenadas() entregue datos reales
         coordenadas = conica.sacar_coordenadas()
         if coordenadas:
             x_vals = [p[0] for p in coordenadas]
@@ -165,8 +163,24 @@ class AppWindow(ctk.CTk):
             plotter.dibujar_conica(self.frame_der_conicas, x_vals, y_vals, titulo=f"Gráfica: {conica.tipo}")
         """
         
-    def actualizar_pestaña_limites(self, tabla_val, coordenadas):
+    def actualizar_pestaña_limites(self, tabla_val, coordenadas, analisis):
         """Inyecta los datos matemáticos en la GUI y manda a dibujar"""
+        
+        # CONEXIÓN: Cada vez que se procese un nuevo RUT, reseteamos a blanco las entradas de la defensa oral
+        for entry in self.entradas_limites.values():
+            entry.delete(0, "end")
+        self.textbox_justificacion.delete("0.0", "end")
+        self.textbox_justificacion.insert("0.0", "Justificación escrita...")
+
+        # CONEXIÓN: Inyectamos dinámicamente los textos lógicos automáticos que creamos en limites.py
+        self.lbl_regla_seleccion.configure(text=analisis.explicar_regla_seleccion())
+        
+        self.textbox_desarrollo_auto.delete("0.0", "end")
+        self.textbox_desarrollo_auto.insert(
+            "0.0", 
+            analisis.paso_a_paso_limites() + "\n\n" + analisis.justificar_discontinuidad()
+        )
+
         texto_tabla = "x \t\t f(x)\n"
         texto_tabla += "-"*30 + "\n"
         texto_tabla += "Por la Izquierda:\n"
@@ -184,6 +198,8 @@ class AppWindow(ctk.CTk):
         x_vals = [p[0] for p in coordenadas if p[1] is not None]
         y_vals = [p[1] for p in coordenadas if p[1] is not None]
         
-        # --- AQUÍ ESTÁ LA CORRECCIÓN ---
-        # Cambiamos plotter.dibujar_grafico por plotter.dibujar_limites
         plotter.dibujar_limites(self.frame_der, x_vals, y_vals, titulo="Gráfica de la Función por Tramos")
+
+if __name__ == "__main__":
+    app = AppWindow()
+    app.mainloop()
