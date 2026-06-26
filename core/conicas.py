@@ -133,8 +133,71 @@ class Conica:
 
         return "\n".join(pasos)
 
+
+    def paso_a_paso_inverso(self):
+        """ Explica cómo retroceder algebraicamente a la forma general """
+        pasos = []
+        pasos.append("=== PROCEDIMIENTO INVERSO (CANÓNICA A GENERAL) ===")
+        pasos.append("Para retroceder desde la forma canónica a la ecuación general original:")
+        pasos.append("1. Identificamos los binomios al cuadrado perfectos que formamos (x-h)² y (y-k)².")
+        pasos.append("2. Desarrollamos cada binomio utilizando la regla de producto notable: (a±b)² = a² ± 2ab + b².")
+        pasos.append("3. Multiplicamos el resultado interno por los coeficientes exteriores correspondientes (A y B).")
+        if self.tipo in ["Elipse", "Hipérbola"]:
+            pasos.append("4. Multiplicamos toda la ecuación por el Mínimo Común Múltiplo para eliminar los denominadores.")
+        pasos.append("5. Trasladamos todos los términos de la derecha hacia el lado izquierdo de la igualdad.")
+        pasos.append("6. Agrupamos y sumamos las constantes numéricas sueltas.")
+        pasos.append(f"7. Finalmente, igualamos a 0 y recuperamos nuestra estructura:\n   {self.A:.2f}x^2 + {self.B:.2f}y^2 + {self.C:.2f}x + {self.D:.2f}y + {self.E:.2f} = 0")
+        
+        return "\n".join(pasos)
+
     def sacar_coordenadas(self):
-        # Esta función dependerá de los límites del plano cartesiano que definas en plotter.py.
-        # Por ahora retorna un arreglo vacío listo para que lo conecten con el renderizador.
+        """ Despejamos 'y' usando la fórmula general cuadrática para generar puntos """
         puntos = []
+        
+        # Calculamos un "centro" aproximado referencial para que la gráfica no se escape
+        h = -self.C / (2 * self.A) if self.A != 0 else 0
+        k = -self.D / (2 * self.B) if self.B != 0 else 0
+        
+        # CASO 1: Parábola Horizontal (No existe x^2, despejamos x en función de y)
+        if self.A == 0 and self.C != 0:
+            # Escaneamos valores de 'y' cerca del vértice k
+            for i in range(-2000, 2001):
+                y = k + (i * 0.05) 
+                x = (-self.B * (y**2) - self.D * y - self.E) / self.C
+                puntos.append((x, y))
+                
+        # CASO 2: Parábola Vertical (No existe y^2, despejamos y en función de x)
+        elif self.B == 0 and self.D != 0:
+            # Escaneamos valores de 'x' cerca del vértice h
+            for i in range(-2000, 2001):
+                x = h + (i * 0.05)
+                y = (-self.A * (x**2) - self.C * x - self.E) / self.D
+                puntos.append((x, y))
+                
+        # CASO 3: Elipse, Hipérbola y Circunferencia (Ambas variables están al cuadrado)
+        else:
+            # Tenemos una ecuación de la forma: B*y^2 + D*y + (A*x^2 + C*x + E) = 0
+            # Aplicaremos la fórmula general cuadrática: y = (-b ± √(b² - 4ac)) / 2a
+            a_cuad = self.B
+            b_lin = self.D
+            
+            # Escaneamos valores de 'x' en un rango amplio alrededor del centro
+            for i in range(-4000, 4001):
+                x = h + (i * 0.05) 
+                c_const = self.A * (x**2) + self.C * x + self.E
+                
+                # Discriminante (Lo que va dentro de la raíz cuadrada)
+                discriminante = (b_lin**2) - (4 * a_cuad * c_const)
+                
+                # Si el discriminante es positivo o cero, existe gráfica en ese punto de X
+                if discriminante >= 0:
+                    raiz = discriminante ** 0.5
+                    
+                    # Obtenemos las dos respuestas de 'y' (+ y -)
+                    y1 = (-b_lin + raiz) / (2 * a_cuad)
+                    y2 = (-b_lin - raiz) / (2 * a_cuad)
+                    
+                    puntos.append((x, y1))
+                    puntos.append((x, y2))
+                    
         return puntos
