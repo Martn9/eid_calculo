@@ -1,201 +1,141 @@
 class Conica:
     def __init__(self, digitos, dv):
         self.digitos = digitos
-        self.dv_str = str(dv).upper()
+        self.dv = dv
+        self.tipo = ""
         
-        # Variables de la ecuación general: Ax^2 + By^2 + Cx + Dy + E = 0
+        # Nuestras 5 letras de la ecuación general
         self.A = 0
         self.B = 0
         self.C = 0
         self.D = 0
         self.E = 0
         
-        self.tipo = ""
-        self.v = self._determinar_v()
-        
-        self._calcular_coeficientes()
-        self._clasificar()
+        # Ejecutamos el cálculo nada más al crear la cónica
+        self.calcular_coeficientes()
+        self.clasificar_figura()
 
-    def _determinar_v(self):
-        if self.dv_str == 'K':
-            return 10
-        elif self.dv_str == '0':
-            return 11
-        else:
-            return int(self.dv_str)
-
-    def _calcular_coeficientes(self):
+    def calcular_coeficientes(self):
+        # Desarmamos la lista de dígitos para que sea más fácil usarlos
         d1, d2, d3, d4, d5, d6, d7, d8 = self.digitos
         
-        # Cálculo base según la rúbrica
-        self.A = (d1 + d2) / self.v
-        self.B = (d3 + d4) / self.v
+        # Sacamos el valor de v según el dígito verificador
+        if str(self.dv).upper() == 'K':
+            v = 10
+        elif str(self.dv) == '0':
+            v = 11
+        else:
+            v = int(self.dv)
+            
+        # Aplicamos las fórmulas que salen en la pauta
+        self.A = (d1 + d2) / v
+        self.B = (d3 + d4) / v
         self.C = -(d5 + d6)
         self.D = -(d7 + d8)
         self.E = d1 + d3 + d5 + d7
 
-        # Ajustes condicionales para forzar distintas cónicas
-        if d8 % 2 != 0:  # Si d8 es impar
+        # Reglas extra del profesor para alterar la figura
+        if d8 % 2 != 0:       # Si d8 es impar, B cambia de signo
             self.B = -self.B
             
-        if d1 == d2:     # Si d1 y d2 son iguales
+        if d1 == d2:          # Si d1 y d2 son iguales, forzamos circunferencia
             self.B = self.A
             
-        if (d5 + d6) % 3 == 0:  # Múltiplo de 3
+        if (d5 + d6) % 3 == 0:  # Si es múltiplo de 3, matamos A o B para que sea parábola
             if d7 % 2 == 0:
                 self.B = 0
             else:
                 self.A = 0
 
-    def _clasificar(self):
-        # Determinación de la cónica según los coeficientes cuadráticos
+    def clasificar_figura(self):
+        # Para saber qué figura es, solo miramos los números que acompañan al cuadrado (A y B)
         if self.A == 0 or self.B == 0:
             self.tipo = "Parábola"
         elif self.A == self.B:
             self.tipo = "Circunferencia"
         elif (self.A * self.B) > 0:
             self.tipo = "Elipse"
-        elif (self.A * self.B) < 0:
+        else:
             self.tipo = "Hipérbola"
 
     def paso_a_paso_canonico(self):
-        pasos = []
-        pasos.append("=== DESARROLLO HACIA LA FORMA CANÓNICA ===")
-        pasos.append(f"Ecuación General: {self.A:.2f}x^2 + {self.B:.2f}y^2 + {self.C:.2f}x + {self.D:.2f}y + {self.E:.2f} = 0\n")
-
-        # Lógica para Circunferencia, Elipse e Hipérbola (Ambas variables al cuadrado)
+        # Armamos el texto sumando strings (como se hace normalmente)
+        texto = "=== DE ECUACIÓN GENERAL A FORMA CANÓNICA ===\n\n"
+        texto += f"Ecuación inicial: {self.A:.2f}x² + {self.B:.2f}y² + {self.C:.2f}x + {self.D:.2f}y + {self.E:.2f} = 0\n\n"
+        
         if self.tipo in ["Circunferencia", "Elipse", "Hipérbola"]:
-            pasos.append("1. Agrupamos los términos con x y los términos con y, y pasamos el término independiente al otro lado:")
-            pasos.append(f"({self.A:.2f}x^2 + {self.C:.2f}x) + ({self.B:.2f}y^2 + {self.D:.2f}y) = {-self.E:.2f}")
-
-            pasos.append("\n2. Factorizamos los coeficientes principales (A y B) de los términos cuadráticos:")
-            fact_x = self.C / self.A if self.A != 0 else 0
-            fact_y = self.D / self.B if self.B != 0 else 0
-            pasos.append(f"{self.A:.2f}(x^2 + {fact_x:.2f}x) + {self.B:.2f}(y^2 + {fact_y:.2f}y) = {-self.E:.2f}")
-
-            pasos.append("\n3. Completamos el cuadrado sumando (b/2)^2 dentro del paréntesis y compensando en el lado derecho:")
-            comp_x = (fact_x / 2) ** 2
-            comp_y = (fact_y / 2) ** 2
-            lado_derecho = -self.E + (self.A * comp_x) + (self.B * comp_y)
+            texto += "Paso 1: Juntamos las 'x' a un lado, las 'y' al otro, y pasamos el número solo a la derecha.\n"
+            texto += "Paso 2: Le sacamos el factor común a los números que acompañan al x² y al y².\n"
+            texto += "Paso 3: Hacemos la 'completación de cuadrados' (sumamos la mitad del número del medio al cuadrado).\n"
+            texto += "Paso 4: Lo que agregamos a la izquierda, también lo sumamos a la derecha para equilibrar.\n"
+            texto += "Paso 5: Comprimimos la ecuación dejándola como binomios al cuadrado perfectos.\n"
+            if self.tipo != "Circunferencia":
+                texto += "Paso 6: Como es Elipse o Hipérbola, dividimos todo por el número de la derecha para igualar a 1.\n"
+        else:
+            texto += "Paso 1: Dejamos la letra que está al cuadrado a la izquierda y pasamos todo lo demás a la derecha.\n"
+            texto += "Paso 2: Factorizamos el número principal.\n"
+            texto += "Paso 3: Hacemos la completación de cuadrados sumando la mitad del término lineal al cuadrado.\n"
+            texto += "Paso 4: Comprimimos la izquierda como un binomio al cuadrado perfecto.\n"
+            texto += "Paso 5: Factorizamos la derecha para que el vértice (h, k) quede a la vista.\n"
             
-            pasos.append(f"{self.A:.2f}(x^2 + {fact_x:.2f}x + {comp_x:.2f}) + {self.B:.2f}(y^2 + {fact_y:.2f}y + {comp_y:.2f}) = {-self.E:.2f} + {self.A * comp_x:.2f} + {self.B * comp_y:.2f}")
-            
-            pasos.append("\n4. Expresamos como binomios al cuadrado:")
-            pasos.append(f"{self.A:.2f}(x + {fact_x/2:.2f})^2 + {self.B:.2f}(y + {fact_y/2:.2f})^2 = {lado_derecho:.2f}")
-
-            if self.tipo != "Circunferencia" and lado_derecho != 0:
-                pasos.append("\n5. Dividimos toda la ecuación por el término de la derecha para igualar a 1:")
-                denom_x = lado_derecho / self.A
-                denom_y = lado_derecho / self.B
-                pasos.append(f"(x + {fact_x/2:.2f})^2 / {denom_x:.2f} + (y + {fact_y/2:.2f})^2 / {denom_y:.2f} = 1")
-            
-            pasos.append(f"\nTipo identificado: {self.tipo}")
-
-        # Lógica para Parábola (Solo una variable al cuadrado)
-        elif self.tipo == "Parábola":
-            if self.A == 0: # Parábola horizontal (y al cuadrado)
-                pasos.append("1. Agrupamos los términos con 'y' y pasamos los términos con 'x' e independientes al otro lado:")
-                pasos.append(f"{self.B:.2f}y^2 + {self.D:.2f}y = {-self.C:.2f}x + {-self.E:.2f}")
-                
-                pasos.append("\n2. Factorizamos el coeficiente principal de y:")
-                fact_y = self.D / self.B
-                pasos.append(f"{self.B:.2f}(y^2 + {fact_y:.2f}y) = {-self.C:.2f}x + {-self.E:.2f}")
-                
-                pasos.append("\n3. Completamos el cuadrado sumando (b/2)^2:")
-                comp_y = (fact_y / 2) ** 2
-                lado_derecho_E = -self.E + (self.B * comp_y)
-                pasos.append(f"{self.B:.2f}(y + {fact_y/2:.2f})^2 = {-self.C:.2f}x + {lado_derecho_E:.2f}")
-                
-                if self.C != 0:
-                    fact_x_derecho = lado_derecho_E / -self.C
-                    pasos.append("\n4. Factorizamos el lado derecho para obtener el vértice:")
-                    pasos.append(f"{self.B:.2f}(y + {fact_y/2:.2f})^2 = {-self.C:.2f}(x + {fact_x_derecho:.2f})")
-                    
-            else: # Parábola vertical (x al cuadrado)
-                pasos.append("1. Agrupamos los términos con 'x' y pasamos los términos con 'y' e independientes al otro lado:")
-                pasos.append(f"{self.A:.2f}x^2 + {self.C:.2f}x = {-self.D:.2f}y + {-self.E:.2f}")
-                
-                pasos.append("\n2. Factorizamos el coeficiente principal de x:")
-                fact_x = self.C / self.A
-                pasos.append(f"{self.A:.2f}(x^2 + {fact_x:.2f}x) = {-self.D:.2f}y + {-self.E:.2f}")
-                
-                pasos.append("\n3. Completamos el cuadrado sumando (b/2)^2:")
-                comp_x = (fact_x / 2) ** 2
-                lado_derecho_E = -self.E + (self.A * comp_x)
-                pasos.append(f"{self.A:.2f}(x + {fact_x/2:.2f})^2 = {-self.D:.2f}y + {lado_derecho_E:.2f}")
-                
-                if self.D != 0:
-                    fact_y_derecho = lado_derecho_E / -self.D
-                    pasos.append("\n4. Factorizamos el lado derecho para obtener el vértice:")
-                    pasos.append(f"{self.A:.2f}(x + {fact_x/2:.2f})^2 = {-self.D:.2f}(y + {fact_y_derecho:.2f})")
-            
-            pasos.append("\nTipo identificado: Parábola")
-
-        return "\n".join(pasos)
-
+        texto += f"\n>> El análisis matemático indica que la figura es una {self.tipo}."
+        return texto
 
     def paso_a_paso_inverso(self):
-        """ Explica cómo retroceder algebraicamente a la forma general """
-        pasos = []
-        pasos.append("=== PROCEDIMIENTO INVERSO (CANÓNICA A GENERAL) ===")
-        pasos.append("Para retroceder desde la forma canónica a la ecuación general original:")
-        pasos.append("1. Identificamos los binomios al cuadrado perfectos que formamos (x-h)² y (y-k)².")
-        pasos.append("2. Desarrollamos cada binomio utilizando la regla de producto notable: (a±b)² = a² ± 2ab + b².")
-        pasos.append("3. Multiplicamos el resultado interno por los coeficientes exteriores correspondientes (A y B).")
-        if self.tipo in ["Elipse", "Hipérbola"]:
-            pasos.append("4. Multiplicamos toda la ecuación por el Mínimo Común Múltiplo para eliminar los denominadores.")
-        pasos.append("5. Trasladamos todos los términos de la derecha hacia el lado izquierdo de la igualdad.")
-        pasos.append("6. Agrupamos y sumamos las constantes numéricas sueltas.")
-        pasos.append(f"7. Finalmente, igualamos a 0 y recuperamos nuestra estructura:\n   {self.A:.2f}x^2 + {self.B:.2f}y^2 + {self.C:.2f}x + {self.D:.2f}y + {self.E:.2f} = 0")
-        
-        return "\n".join(pasos)
+        texto = "=== PROCEDIMIENTO INVERSO ===\n\n"
+        texto += "Para retroceder y volver a la ecuación original hacemos esto:\n"
+        texto += "1. Agarramos la ecuación canónica y miramos los binomios al cuadrado (x-h)² y (y-k)².\n"
+        texto += "2. Los resolvemos usando la vieja regla: El primero al cuadrado, más el doble del primero por el segundo, más el segundo al cuadrado.\n"
+        texto += "3. Multiplicamos eso por los números que estaban afuera del paréntesis.\n"
+        texto += "4. Si nos quedó alguna fracción abajo, multiplicamos toda la ecuación por el Mínimo Común Múltiplo para matarla.\n"
+        texto += "5. Pasamos todo para el lado izquierdo para que quede igualado a 0.\n"
+        texto += "6. Sumamos los números sueltos y recuperamos la ecuación general.\n"
+        return texto
 
     def sacar_coordenadas(self):
-        """ Despejamos 'y' usando la fórmula general cuadrática para generar puntos """
         puntos = []
         
-        # Calculamos un "centro" aproximado referencial para que la gráfica no se escape
-        h = -self.C / (2 * self.A) if self.A != 0 else 0
-        k = -self.D / (2 * self.B) if self.B != 0 else 0
+        # Sacamos un centro de referencia usando una fórmula básica para no buscar puntos al infinito
+        centro_x = -self.C / (2 * self.A) if self.A != 0 else 0
+        centro_y = -self.D / (2 * self.B) if self.B != 0 else 0
         
-        # CASO 1: Parábola Horizontal (No existe x^2, despejamos x en función de y)
-        if self.A == 0 and self.C != 0:
-            # Escaneamos valores de 'y' cerca del vértice k
-            for i in range(-2000, 2001):
-                y = k + (i * 0.05) 
-                x = (-self.B * (y**2) - self.D * y - self.E) / self.C
+        # Si es Parábola Horizontal (no tiene X al cuadrado)
+        if self.A == 0:
+            # Hacemos un loop simple alrededor del centro
+            for i in range(-1000, 1000):
+                y = centro_y + (i * 0.1)
+                # Despejamos X a la mala
+                x = (-self.B*(y**2) - self.D*y - self.E) / self.C
                 puntos.append((x, y))
                 
-        # CASO 2: Parábola Vertical (No existe y^2, despejamos y en función de x)
-        elif self.B == 0 and self.D != 0:
-            # Escaneamos valores de 'x' cerca del vértice h
-            for i in range(-2000, 2001):
-                x = h + (i * 0.05)
-                y = (-self.A * (x**2) - self.C * x - self.E) / self.D
+        # Si es Parábola Vertical (no tiene Y al cuadrado)
+        elif self.B == 0:
+            for i in range(-1000, 1000):
+                x = centro_x + (i * 0.1)
+                # Despejamos Y
+                y = (-self.A*(x**2) - self.C*x - self.E) / self.D
                 puntos.append((x, y))
                 
-        # CASO 3: Elipse, Hipérbola y Circunferencia (Ambas variables están al cuadrado)
+        # Si es Elipse, Hipérbola o Circunferencia (Ambas al cuadrado)
         else:
-            # Tenemos una ecuación de la forma: B*y^2 + D*y + (A*x^2 + C*x + E) = 0
-            # Aplicaremos la fórmula general cuadrática: y = (-b ± √(b² - 4ac)) / 2a
-            a_cuad = self.B
-            b_lin = self.D
+            # Usamos la fórmula general cuadrática para despejar 'Y'
+            a = self.B
+            b = self.D
             
-            # Escaneamos valores de 'x' en un rango amplio alrededor del centro
-            for i in range(-4000, 4001):
-                x = h + (i * 0.05) 
-                c_const = self.A * (x**2) + self.C * x + self.E
+            for i in range(-3000, 3000):
+                x = centro_x + (i * 0.1)
+                # Todo lo que no tiene 'y' lo tratamos como la constante 'c'
+                c = self.A*(x**2) + self.C*x + self.E
                 
-                # Discriminante (Lo que va dentro de la raíz cuadrada)
-                discriminante = (b_lin**2) - (4 * a_cuad * c_const)
+                # Lo que va adentro de la raíz
+                discriminante = (b**2) - (4*a*c)
                 
-                # Si el discriminante es positivo o cero, existe gráfica en ese punto de X
+                # Si es positivo, se puede sacar raíz cuadrada
                 if discriminante >= 0:
                     raiz = discriminante ** 0.5
                     
-                    # Obtenemos las dos respuestas de 'y' (+ y -)
-                    y1 = (-b_lin + raiz) / (2 * a_cuad)
-                    y2 = (-b_lin - raiz) / (2 * a_cuad)
+                    y1 = (-b + raiz) / (2*a)
+                    y2 = (-b - raiz) / (2*a)
                     
                     puntos.append((x, y1))
                     puntos.append((x, y2))
