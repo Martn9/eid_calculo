@@ -160,6 +160,8 @@ class AppWindow(ctk.CTk):
             x_vals = [p[0] for p in coordenadas]
             y_vals = [p[1] for p in coordenadas]
             plotter.dibujar_conica(self.frame_der_conicas, x_vals, y_vals, titulo=f"Gráfica: {conica.tipo}")
+        else:
+            plotter.mostrar_mensaje(self.frame_der_conicas, getattr(conica, "mensaje", "Sin puntos reales para graficar."))
      
         
     def actualizar_pestaña_limites(self, tabla_val, coordenadas, analisis):
